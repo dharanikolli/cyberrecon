@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberRecon X — Sign In</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-page">
+<div class="login-wrap">
+  <div class="login-box">
+
+    <div class="login-logo">
+      <span class="logo-hex">⬡</span>
+      <span class="logo-text">CYBER<span class="logo-accent">RECON</span> X</span>
+    </div>
+    <p class="login-sub">Advanced Reconnaissance Platform</p>
+
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" name="username" placeholder="Enter your username" required autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Enter your password" required>
+      </div>
+      <button type="submit" class="btn-primary full-width">Sign In →</button>
+    </form>
+
+    <div class="auth-switch">
+      Don't have an account?
+      <a href="/register">Create one</a>
+    </div>
+
+    <p class="login-hint">Contact your administrator if you have trouble signing in.</p>
+
+  </div>
+</div>
+</body>
+</html>

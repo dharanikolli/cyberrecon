@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberRecon X — Saved Domains</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+{% include 'sidebar.html' %}
+
+<div class="main-content">
+  <div class="topbar">
+    <div class="topbar-title"><span class="breadcrumb-icon">🔖</span> Saved Domains</div>
+    <div class="topbar-user">
+      <span class="user-badge">{{ user }}</span>
+      <a href="/logout" class="btn-logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- Add manually -->
+    <div class="scan-card">
+      <h2 class="card-title">Add a Domain</h2>
+      <p class="card-desc">Domain save chesukoni quick-launch cheyyadaniki use cheyyandi.</p>
+      <form method="POST" action="/saved-domains/add" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" placeholder="Domain  e.g. example.com" required>
+          <input type="text" name="label"  placeholder="Label (optional)  e.g. My Company" style="max-width:220px">
+          <input type="hidden" name="next" value="/saved-domains">
+          <button type="submit" class="btn-primary">🔖 Save</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Saved list -->
+    {% if saved %}
+    <div class="res-card full-width-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 class="res-title" style="margin:0"><span class="res-icon">🔖</span> {{ saved | length }} Saved Domain(s)</h3>
+        <a href="/saved-domains/clear" class="btn-outline">Clear All</a>
+      </div>
+      <table class="data-table striped">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Label</th>
+            <th>Domain</th>
+            <th>Saved On</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in saved %}
+          <tr>
+            <td class="muted">{{ loop.index }}</td>
+            <td><strong>{{ s.label }}</strong></td>
+            <td>
+              <span class="mono-text">{{ s.domain }}</span>
+            </td>
+            <td class="muted">{{ s.added }}</td>
+            <td class="action-cell">
+              <a href="/?domain={{ s.domain }}" class="btn-outline-sm">🔍 Full Scan</a>
+              <a href="/subdomain?domain={{ s.domain }}" class="btn-outline-sm">🌿 Subdomains</a>
+              <a href="/port-scanner?target={{ s.domain }}" class="btn-outline-sm">🔌 Ports</a>
+              <a href="/saved-domains/remove/{{ s.domain }}" class="btn-outline-sm btn-remove">✕ Remove</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="res-card full-width-card" style="text-align:center; padding:50px;">
+      <p style="font-size:2em; margin-bottom:10px;">🔖</p>
+      <p class="muted">No saved domains yet.</p>
+      <p class="muted" style="margin-top:6px;">Scan a domain → Risk banner lo "Save Domain" click cheyyandi.</p>
+      <a href="/" class="btn-primary" style="margin-top:18px; display:inline-block;">Go to Full Scan</a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+</body>
+</html>

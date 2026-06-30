@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberRecon X — {{ tool | replace('_',' ') | title }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+{% include 'sidebar.html' %}
+
+<div class="main-content">
+  <div class="topbar">
+    <div class="topbar-title">
+      {% if tool == 'subdomain' %}<span class="breadcrumb-icon">🌿</span> Subdomain Discovery
+      {% elif tool == 'reverse_ip' %}<span class="breadcrumb-icon">🔁</span> Reverse IP Lookup
+      {% elif tool == 'reverse_whois' %}<span class="breadcrumb-icon">📜</span> Reverse WHOIS Lookup
+      {% elif tool == 'dns_report' %}<span class="breadcrumb-icon">🌐</span> DNS Report
+      {% elif tool == 'http_headers' %}<span class="breadcrumb-icon">🛡️</span> HTTP Header Analyzer
+      {% elif tool == 'ip_history' %}<span class="breadcrumb-icon">📅</span> IP History Lookup
+      {% elif tool == 'ip_geo' %}<span class="breadcrumb-icon">🌍</span> IP Geolocation Finder
+      {% elif tool == 'port_scanner' %}<span class="breadcrumb-icon">🔌</span> Port Scanner
+      {% elif tool == 'ssl_scanner' %}<span class="breadcrumb-icon">🔒</span> SSL Certificate Scanner
+      {% elif tool == 'tech_detect' %}<span class="breadcrumb-icon">⚙️</span> Technology Detection
+      {% endif %}
+    </div>
+    <div class="topbar-user">
+      <span class="user-badge">{{ user }}</span>
+      <a href="/logout" class="btn-logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <!-- ── PORT SCANNER ─────────────────────────────────────── -->
+    {% if tool == 'port_scanner' %}
+    <div class="scan-card">
+      <h2 class="card-title">Port Scanner</h2>
+      <p class="card-desc">Scan default common ports, or specify any custom range — all the way up to port 65,535.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="target" placeholder="Domain or IP  e.g. example.com" value="{{ result.target if result else '' }}">
+        </div>
+        <div class="mode-row">
+          <label class="mode-opt">
+            <input type="radio" name="mode" value="default" {% if not result or result.mode == 'default' %}checked{% endif %} onchange="toggleRange(false)">
+            Default Ports (17 common)
+          </label>
+          <label class="mode-opt">
+            <input type="radio" name="mode" value="custom" {% if result and result.mode == 'custom' %}checked{% endif %} onchange="toggleRange(true)">
+            Custom Range
+          </label>
+        </div>
+        <div class="range-row" id="range-row" style="display:{{ 'flex' if result and result.mode == 'custom' else 'none' }}">
+          <input type="number" name="start_port" placeholder="Start  e.g. 1" min="1" max="65535"
+                 value="{{ result.start if result and result.mode == 'custom' else 1 }}">
+          <span class="range-sep">—</span>
+          <input type="number" name="end_port" placeholder="End  e.g. 65535" min="1" max="65535"
+                 value="{{ result.end if result and result.mode == 'custom' else 1024 }}">
+          <small class="muted">Full range: 1 – 65,535</small>
+        </div>
+        <label class="perm-check">
+          <input type="checkbox" name="permission" value="yes"
+                 {% if result %}checked{% endif %}>
+          I confirm I have authorization to scan this domain
+        </label>
+        <button type="submit" class="btn-primary" id="scan-btn">Scan Ports</button>
+      </form>
+    </div>
+
+    {% if result %}
+    <div class="res-card full-width-card">
+      <div class="port-results-header">
+        <h3 class="res-title" style="margin-bottom:0">
+          Results — {{ result.target }} &nbsp;<span class="muted" style="font-size:12px">({{ result.ip }})</span>
+        </h3>
+        <div class="port-summary">
+          {% if result.mode == 'custom' %}
+            <span class="ps-badge ps-info">Range {{ result.start }} – {{ result.end }}</span>
+            <span class="ps-badge ps-info">{{ result.ports | length }} scanned</span>
+          {% else %}
+            <span class="ps-badge ps-info">17 default ports</span>
+          {% endif %}
+          <span class="ps-badge ps-open">{{ result.open_ports | length }} open</span>
+          <span class="ps-badge ps-closed">{{ result.ports | length - result.open_ports | length }} closed</span>
+        </div>
+      </div>
+
+      {% if result.open_ports %}
+      <div class="open-ports-bar">
+        <span class="opb-label">⚠ Open:</span>
+        {% for p in result.open_ports %}
+        <span class="opb-chip">{{ p.port }}<span class="opb-svc">/{{ p.service }}</span></span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="alert alert-success" style="margin:12px 0 0">✓ No open ports detected in this range.</div>
+      {% endif %}
+
+      {% if result.mode == 'custom' %}
+      <div class="port-filter-row">
+        <label class="mode-opt">
+          <input type="radio" name="view_filter" value="open" checked onchange="filterPorts('open')"> Open only
+        </label>
+        <label class="mode-opt">
+          <input type="radio" name="view_filter" value="all" onchange="filterPorts('all')"> Show all
+        </label>
+      </div>
+      {% endif %}
+
+      <table class="data-table striped" id="ports-table">
+        <thead><tr><th>Port</th><th>Service</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for p in result.ports %}
+          <tr class="{{ 'row-open' if p.status == 'Open' else 'row-closed' }}"
+              {% if result.mode == 'custom' and p.status == 'Closed' %}style="display:none"{% endif %}>
+            <td><code>{{ p.port }}</code></td>
+            <td>{{ p.service }}</td>
+            <td class="{{ 'text-danger' if p.status == 'Open' else 'text-safe' }}">{{ p.status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <script>
+    function toggleRange(show) {
+      document.getElementById('range-row').style.display = show ? 'flex' : 'none';
+    }
+
+    function filterPorts(mode) {
+      document.querySelectorAll('#ports-table .row-closed').forEach(row => {
+        row.style.display = mode === 'all' ? '' : 'none';
+      });
+    }
+
+    // Show spinner on form submit for large scans
+    document.querySelector('form').addEventListener('submit', function() {
+      var btn = document.getElementById('scan-btn');
+      var mode = document.querySelector('input[name="mode"]:checked').value;
+      if (mode === 'custom') {
+        var s = parseInt(document.querySelector('[name=start_port]').value) || 1;
+        var e = parseInt(document.querySelector('[name=end_port]').value) || 1024;
+        if (e - s > 500) {
+          btn.textContent = 'Scanning… please wait';
+          btn.disabled = true;
+        }
+      }
+    });
+    </script>
+
+    <!-- ── SUBDOMAIN ────────────────────────────────────────── -->
+    {% elif tool == 'subdomain' %}
+    <div class="scan-card">
+      <h2 class="card-title">Subdomain Discovery</h2>
+      <p class="card-desc">Discovers subdomains via DNS brute-force and certificate transparency logs (crt.sh).</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" placeholder="Domain  e.g. example.com" value="{{ result.domain if result else '' }}">
+          <button type="submit" class="btn-primary">Discover</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card full-width-card">
+      <h3 class="res-title">{{ result.count }} Subdomains Found — {{ result.domain }}</h3>
+      {% if result.subdomains %}
+      <div class="subdomain-list">
+        {% for s in result.subdomains %}
+        <div class="subdomain-item">
+          <span class="sub-dot">◦</span>
+          <a href="https://{{ s }}" target="_blank" class="sub-link">{{ s }}</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="muted">No subdomains discovered.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── REVERSE IP ───────────────────────────────────────── -->
+    {% elif tool == 'reverse_ip' %}
+    <div class="scan-card">
+      <h2 class="card-title">Reverse IP Lookup</h2>
+      <p class="card-desc">Find all domains hosted on the same IP address.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="target" placeholder="IP or domain  e.g. 93.184.216.34" value="{{ result.ip if result else '' }}">
+          <button type="submit" class="btn-primary">Lookup</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card full-width-card">
+      <h3 class="res-title">{{ result.count }} Domains on {{ result.ip }}</h3>
+      {% if result.domains %}
+      <div class="subdomain-list">
+        {% for d in result.domains %}
+        <div class="subdomain-item">
+          <span class="sub-dot">◦</span>
+          <a href="https://{{ d }}" target="_blank" class="sub-link">{{ d }}</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="muted">No shared domains found.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── REVERSE WHOIS ────────────────────────────────────── -->
+    {% elif tool == 'reverse_whois' %}
+    <div class="scan-card">
+      <h2 class="card-title">Reverse WHOIS Lookup</h2>
+      <p class="card-desc">Deep WHOIS record for any domain — registrant, dates, nameservers.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" placeholder="Domain  e.g. example.com" value="{{ result.domain if result else '' }}">
+          <button type="submit" class="btn-primary">Lookup</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card full-width-card">
+      <h3 class="res-title">WHOIS — {{ result.domain }}</h3>
+      <table class="data-table">
+        {% for k, v in result.whois.items() %}
+        <tr><td class="td-key">{{ k | replace('_',' ') | title }}</td><td>{{ v }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- ── DNS REPORT ───────────────────────────────────────── -->
+    {% elif tool == 'dns_report' %}
+    <div class="scan-card">
+      <h2 class="card-title">DNS Report</h2>
+      <p class="card-desc">Full DNS record dump — A, AAAA, MX, NS, TXT, CNAME, SOA.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" placeholder="Domain  e.g. example.com" value="{{ result.domain if result else '' }}">
+          <button type="submit" class="btn-primary">Get DNS</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card full-width-card">
+      <h3 class="res-title">DNS Records — {{ result.domain }}</h3>
+      <div class="dns-grid">
+        {% for type, records in result.records.items() %}
+        <div class="dns-block">
+          <div class="dns-type">{{ type }}</div>
+          {% for r in records %}<div class="dns-val">{{ r }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── HTTP HEADERS ─────────────────────────────────────── -->
+    {% elif tool == 'http_headers' %}
+    <div class="scan-card">
+      <h2 class="card-title">HTTP Header Analyzer</h2>
+      <p class="card-desc">Checks 8 critical security response headers for presence or absence.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" placeholder="Domain  e.g. example.com" value="{{ result.domain if result else '' }}">
+          <button type="submit" class="btn-primary">Analyze</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card full-width-card">
+      <h3 class="res-title">Headers — {{ result.domain }}</h3>
+      <p class="sub-info">URL: <strong>{{ result.security.url }}</strong> &nbsp;|&nbsp; Status: <strong>{{ result.security.status_code }}</strong> &nbsp;|&nbsp; Server: <strong>{{ result.security.server }}</strong></p>
+      <div class="headers-grid">
+        {% for header, status in result.security.headers.items() %}
+        <div class="header-item {{ 'header-ok' if status == 'Present' else 'header-bad' }}">
+          <span class="header-dot">{{ '✓' if status == 'Present' else '✗' }}</span>
+          <span class="header-name">{{ header }}</span>
+          <span class="header-status">{{ status }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── IP HISTORY ───────────────────────────────────────── -->
+    {% elif tool == 'ip_history' %}
+    <div class="scan-card">
+      <h2 class="card-title">IP History Lookup</h2>
+      <p class="card-desc">Historical host records and known IPs for a domain.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" placeholder="Domain  e.g. example.com" value="{{ result.domain if result else '' }}">
+          <button type="submit" class="btn-primary">Lookup</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card full-width-card">
+      <h3 class="res-title">IP History — {{ result.domain }}</h3>
+      {% if result.entries %}
+      <table class="data-table striped">
+        <thead><tr><th>Domain</th><th>IP Address</th></tr></thead>
+        <tbody>
+          {% for e in result.entries %}
+          <tr><td>{{ e.domain }}</td><td>{{ e.ip }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted">No historical records found.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── IP GEO ────────────────────────────────────────────── -->
+    {% elif tool == 'ip_geo' %}
+    <div class="scan-card">
+      <h2 class="card-title">IP Geolocation Finder</h2>
+      <p class="card-desc">Pinpoint country, city, ISP, ASN, and coordinates for any IP.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="target" placeholder="IP or domain  e.g. 8.8.8.8" value="{{ result.ip if result else '' }}">
+          <button type="submit" class="btn-primary">Geolocate</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card">
+      <h3 class="res-title">Geolocation — {{ result.ip }}</h3>
+      {% if result.geo %}
+      <table class="data-table">
+        {% for k, v in result.geo.items() %}
+        {% if k != 'status' %}
+        <tr><td class="td-key">{{ k | title }}</td><td>{{ v }}</td></tr>
+        {% endif %}
+        {% endfor %}
+      </table>
+      {% else %}
+      <p class="muted">No geolocation data found.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── SSL SCANNER ──────────────────────────────────────── -->
+    {% elif tool == 'ssl_scanner' %}
+    <div class="scan-card">
+      <h2 class="card-title">SSL Certificate Scanner</h2>
+      <p class="card-desc">Inspect TLS certificate details, expiry, issuer, and Subject Alternative Names.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" placeholder="Domain  e.g. example.com" value="{{ result.domain if result else '' }}">
+          <button type="submit" class="btn-primary">Scan SSL</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card full-width-card">
+      <h3 class="res-title">SSL — {{ result.domain }}</h3>
+      {% if result.ssl.valid %}
+      <table class="data-table">
+        <tr><td class="td-key">Issued To</td><td>{{ result.ssl.issued_to }}</td></tr>
+        <tr><td class="td-key">Issuer</td><td>{{ result.ssl.issuer }}</td></tr>
+        <tr><td class="td-key">Valid From</td><td>{{ result.ssl.not_before }}</td></tr>
+        <tr><td class="td-key">Valid Until</td><td>{{ result.ssl.not_after }}</td></tr>
+        <tr><td class="td-key">Version</td><td>{{ result.ssl.version }}</td></tr>
+        <tr><td class="td-key">Serial</td><td>{{ result.ssl.serial }}</td></tr>
+        <tr><td class="td-key">SANs</td><td>{{ result.ssl.san | join(', ') }}</td></tr>
+      </table>
+      {% else %}
+      <div class="alert alert-warn">{{ result.ssl.get('error', 'SSL not available') }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── TECH DETECT ──────────────────────────────────────── -->
+    {% elif tool == 'tech_detect' %}
+    <div class="scan-card">
+      <h2 class="card-title">Technology Detection</h2>
+      <p class="card-desc">Fingerprints CMS, frameworks, CDN, server software from response headers and page source.</p>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" placeholder="Domain  e.g. example.com" value="{{ result.domain if result else '' }}">
+          <button type="submit" class="btn-primary">Detect</button>
+        </div>
+      </form>
+    </div>
+    {% if result %}
+    <div class="res-card">
+      <h3 class="res-title">Technologies — {{ result.domain }}</h3>
+      {% if result.technologies %}
+      <div class="tag-cloud">
+        {% for t in result.technologies %}
+        <span class="tech-tag">{{ t }}</span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="muted">No technologies detected.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% endif %}
+
+  </div>
+</div>
+
+</body>
+</html>

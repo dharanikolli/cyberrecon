@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberRecon X — Scan History</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+{% include 'sidebar.html' %}
+
+<div class="main-content">
+  <div class="topbar">
+    <div class="topbar-title"><span class="breadcrumb-icon">🕑</span> Scan History</div>
+    <div class="topbar-user">
+      <span class="user-badge">{{ user }}</span>
+      <a href="/logout" class="btn-logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="scan-card" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h2 class="card-title" style="margin:0">Recent Scans</h2>
+        <p class="card-desc" style="margin:4px 0 0">Last 20 scans saved in your session.</p>
+      </div>
+      {% if history %}
+      <a href="/history/clear" class="btn-outline">Clear History</a>
+      {% endif %}
+    </div>
+
+    {% if history %}
+    <div class="res-card full-width-card">
+      <table class="data-table striped">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Target</th>
+            <th>Scan Time</th>
+            <th>Risk Level</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in history %}
+          <tr>
+            <td class="muted">{{ loop.index }}</td>
+            <td><strong>{{ h.target }}</strong></td>
+            <td>{{ h.time }}</td>
+            <td>
+              <span class="risk-badge risk-badge-{{ h.risk | lower }}">{{ h.risk }}</span>
+            </td>
+            <td>
+              <a href="/?domain={{ h.target }}" class="btn-outline-sm">Rescan</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="res-card full-width-card" style="text-align:center; padding:50px;">
+      <p style="font-size:2em; margin-bottom:10px;">🕑</p>
+      <p class="muted">No scans yet. Run a scan to see history here.</p>
+      <a href="/" class="btn-primary" style="margin-top:15px; display:inline-block;">Run a Scan</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+</body>
+</html>

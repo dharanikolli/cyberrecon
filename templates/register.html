@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberRecon X — Create Account</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-page">
+<div class="login-wrap">
+  <div class="login-box">
+
+    <div class="login-logo">
+      <span class="logo-hex">⬡</span>
+      <span class="logo-text">CYBER<span class="logo-accent">RECON</span> X</span>
+    </div>
+    <p class="login-sub">Create New Account</p>
+
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    {% if success %}
+    <div class="alert alert-success">
+      {{ success }} &nbsp;<a href="/login">Sign in now →</a>
+    </div>
+    {% endif %}
+
+    {% if not success %}
+    <form method="POST">
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" name="username" placeholder="Choose a username" required autocomplete="off" minlength="3">
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Min. 6 characters" required minlength="6">
+      </div>
+      <div class="field-group">
+        <label>Confirm Password</label>
+        <input type="password" name="confirm_password" placeholder="Re-enter your password" required>
+      </div>
+      <button type="submit" class="btn-primary full-width">Create Account →</button>
+    </form>
+    {% endif %}
+
+    <div class="auth-switch">
+      Already have an account?
+      <a href="/login">Sign in</a>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-hex">⬡</span>
+    <span class="logo-text">CYBER<span class="logo-accent">RECON</span> X</span>
+  </div>
+
+  <div class="sidebar-section-label">FULL SCAN</div>
+  <a href="/" class="nav-item {{ 'active' if request.path == '/' }}">
+    <span class="nav-icon">🔍</span> Full Scan
+  </a>
+
+  <div class="sidebar-section-label">SCANNING TOOLS</div>
+  <a href="/subdomain" class="nav-item {{ 'active' if request.path == '/subdomain' }}">
+    <span class="nav-icon">🌿</span> Subdomain Discovery
+  </a>
+  <a href="/reverse-ip" class="nav-item {{ 'active' if request.path == '/reverse-ip' }}">
+    <span class="nav-icon">🔁</span> Reverse IP Lookup
+  </a>
+  <a href="/reverse-whois" class="nav-item {{ 'active' if request.path == '/reverse-whois' }}">
+    <span class="nav-icon">📜</span> Reverse WHOIS
+  </a>
+  <a href="/dns-report" class="nav-item {{ 'active' if request.path == '/dns-report' }}">
+    <span class="nav-icon">🌐</span> DNS Report
+  </a>
+  <a href="/http-headers" class="nav-item {{ 'active' if request.path == '/http-headers' }}">
+    <span class="nav-icon">🛡️</span> HTTP Header Analyzer
+  </a>
+  <a href="/ip-history" class="nav-item {{ 'active' if request.path == '/ip-history' }}">
+    <span class="nav-icon">📅</span> IP History Lookup
+  </a>
+  <a href="/ip-geo" class="nav-item {{ 'active' if request.path == '/ip-geo' }}">
+    <span class="nav-icon">🌍</span> IP Geolocation
+  </a>
+  <a href="/port-scanner" class="nav-item {{ 'active' if request.path == '/port-scanner' }}">
+    <span class="nav-icon">🔌</span> Port Scanner
+  </a>
+  <a href="/ssl-scanner" class="nav-item {{ 'active' if request.path == '/ssl-scanner' }}">
+    <span class="nav-icon">🔒</span> SSL Certificate Scanner
+  </a>
+  <a href="/tech-detect" class="nav-item {{ 'active' if request.path == '/tech-detect' }}">
+    <span class="nav-icon">⚙️</span> Technology Detection
+  </a>
+
+  <div class="sidebar-section-label">ACCOUNT</div>
+  <a href="/saved-domains" class="nav-item {{ 'active' if request.path == '/saved-domains' }}">
+    <span class="nav-icon">🔖</span> Saved Domains
+  </a>
+  <a href="/history" class="nav-item {{ 'active' if request.path == '/history' }}">
+    <span class="nav-icon">🕑</span> Scan History
+  </a>
+  <a href="/logout" class="nav-item nav-logout">
+    <span class="nav-icon">🚪</span> Logout
+  </a>
+</nav>
