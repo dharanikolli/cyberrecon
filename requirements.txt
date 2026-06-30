@@ -1,0 +1,8 @@
+flask
+requests
+dnspython
+python-whois
+cryptography
+pyOpenSSL
+builtwith
+ipwhois
