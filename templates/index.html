@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberRecon X — Full Scan</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+{% include 'sidebar.html' %}
+
+<div class="main-content">
+  <div class="topbar">
+    <div class="topbar-title">
+      <span class="breadcrumb-icon">🔍</span> Full Scan
+    </div>
+    <div class="topbar-user">
+      <span class="user-badge">{{ user }}</span>
+      <a href="/logout" class="btn-logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <div class="scan-card">
+      <h2 class="card-title">Domain Reconnaissance</h2>
+      <form method="POST" class="scan-form">
+        <div class="input-row">
+          <input type="text" name="domain" id="domainInput" placeholder="Enter domain or IP  e.g. example.com" value="{{ result.domain if result else '' }}">
+          <button type="submit" class="btn-primary">Run Full Scan</button>
+        </div>
+        <label class="perm-check">
+          <input type="checkbox" name="permission" value="yes" {% if result %}checked{% endif %}>
+          I confirm I have authorization to scan this domain
+        </label>
+      </form>
+
+      {% if saved %}
+      <div class="saved-quick">
+        <span class="saved-quick-label">Saved:</span>
+        {% for s in saved %}
+        <button class="saved-chip" onclick="document.getElementById('domainInput').value='{{ s.domain }}'">
+          {{ s.label }}
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+
+    <!-- Risk Summary -->
+    <div class="risk-banner risk-{{ result.risk_level | lower }}">
+      <div class="risk-left">
+        <span class="risk-label">Risk Level</span>
+        <span class="risk-value">{{ result.risk_level }}</span>
+      </div>
+      <div class="risk-score-ring">
+        <span class="ring-val">{{ result.risk_score }}</span>
+        <span class="ring-label">/100</span>
+      </div>
+      <div class="risk-meta">
+        <p><strong>Domain:</strong> {{ result.domain }}</p>
+        <p><strong>IP:</strong> {{ result.ip }}</p>
+        <p><strong>Scanned:</strong> {{ result.time }}</p>
+      </div>
+      <div class="risk-save">
+        <form method="POST" action="/saved-domains/add">
+          <input type="hidden" name="domain" value="{{ result.domain }}">
+          <input type="hidden" name="next" value="/">
+          <input type="text" name="label" placeholder="Label (optional)" class="save-label-input">
+          <button type="submit" class="btn-save-domain">🔖 Save Domain</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="results-grid">
+
+      <!-- WHOIS -->
+      <div class="res-card">
+        <h3 class="res-title"><span class="res-icon">📋</span> WHOIS</h3>
+        <table class="data-table">
+          {% for k, v in result.whois.items() %}
+          <tr><td class="td-key">{{ k | replace('_', ' ') | title }}</td><td>{{ v }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <!-- Geo -->
+      {% if result.geo %}
+      <div class="res-card">
+        <h3 class="res-title"><span class="res-icon">🌍</span> IP Geolocation</h3>
+        <table class="data-table">
+          <tr><td class="td-key">Country</td><td>{{ result.geo.get('country', 'N/A') }}</td></tr>
+          <tr><td class="td-key">Region</td><td>{{ result.geo.get('regionName', 'N/A') }}</td></tr>
+          <tr><td class="td-key">City</td><td>{{ result.geo.get('city', 'N/A') }}</td></tr>
+          <tr><td class="td-key">ISP</td><td>{{ result.geo.get('isp', 'N/A') }}</td></tr>
+          <tr><td class="td-key">Org</td><td>{{ result.geo.get('org', 'N/A') }}</td></tr>
+          <tr><td class="td-key">Timezone</td><td>{{ result.geo.get('timezone', 'N/A') }}</td></tr>
+          <tr><td class="td-key">Coordinates</td><td>{{ result.geo.get('lat', '') }}, {{ result.geo.get('lon', '') }}</td></tr>
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- SSL -->
+      <div class="res-card">
+        <h3 class="res-title"><span class="res-icon">🔒</span> SSL Certificate</h3>
+        {% if result.ssl.valid %}
+        <table class="data-table">
+          <tr><td class="td-key">Issued To</td><td>{{ result.ssl.issued_to }}</td></tr>
+          <tr><td class="td-key">Issuer</td><td>{{ result.ssl.issuer }}</td></tr>
+          <tr><td class="td-key">Valid From</td><td>{{ result.ssl.not_before }}</td></tr>
+          <tr><td class="td-key">Valid Until</td><td>{{ result.ssl.not_after }}</td></tr>
+          <tr><td class="td-key">Version</td><td>{{ result.ssl.version }}</td></tr>
+          <tr><td class="td-key">SANs</td><td>{{ result.ssl.san | join(', ') }}</td></tr>
+        </table>
+        {% else %}
+        <div class="alert alert-warn">{{ result.ssl.get('error', 'SSL not available') }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Technologies -->
+      <div class="res-card">
+        <h3 class="res-title"><span class="res-icon">⚙️</span> Technologies Detected</h3>
+        {% if result.technologies %}
+        <div class="tag-cloud">
+          {% for t in result.technologies %}
+          <span class="tech-tag">{{ t }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted">No technologies detected.</p>
+        {% endif %}
+      </div>
+
+    </div><!-- /results-grid -->
+
+    <!-- DNS Records -->
+    <div class="res-card full-width-card">
+      <h3 class="res-title"><span class="res-icon">🌐</span> DNS Records</h3>
+      <div class="dns-grid">
+        {% for type, records in result.dns.items() %}
+        <div class="dns-block">
+          <div class="dns-type">{{ type }}</div>
+          {% for r in records %}
+          <div class="dns-val">{{ r }}</div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- HTTP Security Headers -->
+    <div class="res-card full-width-card">
+      <h3 class="res-title"><span class="res-icon">🛡️</span> HTTP Security Headers</h3>
+      <p class="sub-info">URL: <strong>{{ result.security.url }}</strong> &nbsp;|&nbsp; Status: <strong>{{ result.security.status_code }}</strong> &nbsp;|&nbsp; Server: <strong>{{ result.security.server }}</strong></p>
+      <div class="headers-grid">
+        {% for header, status in result.security.headers.items() %}
+        <div class="header-item {{ 'header-ok' if status == 'Present' else 'header-bad' }}">
+          <span class="header-dot">{{ '✓' if status == 'Present' else '✗' }}</span>
+          <span class="header-name">{{ header }}</span>
+          <span class="header-status">{{ status }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Port Scan -->
+    <div class="res-card full-width-card">
+      <h3 class="res-title"><span class="res-icon">🔌</span> Port Scan (Default Ports)</h3>
+      <table class="data-table striped">
+        <thead><tr><th>Port</th><th>Service</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for p in result.ports %}
+          <tr>
+            <td>{{ p.port }}</td>
+            <td>{{ p.service }}</td>
+            <td class="{{ 'text-danger' if p.status == 'Open' else 'text-safe' }}">{{ p.status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Public Files -->
+    <div class="res-card full-width-card">
+      <h3 class="res-title"><span class="res-icon">📁</span> Public File Discovery</h3>
+      <table class="data-table striped">
+        <thead><tr><th>File</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for file, status in result.files.items() %}
+          <tr>
+            <td>{{ file }}</td>
+            <td class="{{ 'text-safe' if 'Found' in status else 'text-muted' }}">{{ status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% endif %}
+  </div>
+</div>
+
+</body>
+</html>
